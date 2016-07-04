@@ -53,3 +53,8 @@ target_link_libraries(fpotencia
     Boost::graph)
 set_property(TARGET fpotencia PROPERTY CXX_STANDARD 11)
 set_property(TARGET fpotencia PROPERTY SOVERSION ${VERSION})
+install(TARGETS fpotencia
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(FILES ${fpotencia_HEADERS}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/fpotencia)
