@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
-project(fpotencia VERSION 1.0.0 LANGUAGES CXX)
+project(fPotencia VERSION 1.0.0 LANGUAGES CXX)
 
 include(FindPkgConfig)
 include(GNUInstallDirs)
@@ -12,4 +12,5 @@ add_subdirectory(src)
 
 if(${GTEST_FOUND})
     enable_testing()
+    add_subdirectory(test)
 endif()
