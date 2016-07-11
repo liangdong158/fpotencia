@@ -22,7 +22,10 @@ namespace fPotencia {
 
     /* Constructor
      */
-    Solver_Iwamoto::Solver_Iwamoto(Circuit model) {
+    Solver_Iwamoto::Solver_Iwamoto(Circuit model):
+            tolerance(DEFAULT_SOLUTION_TOLERANCE),
+            maxIterations(DEFAULT_MAX_ITERATIONS)
+    {
         Model = model;
 
         Sol = Model.get_initial_solution();
@@ -337,7 +340,7 @@ namespace fPotencia {
      */
     bool Solver_Iwamoto::converged(vec X, uint Nj) {
         for (uint i = 0; i < Nj; i++)
-            if (abs(X.coeff(i)) > EPS)
+            if (abs(X.coeff(i)) > tolerance)
                 return false;
 
         return true;
@@ -460,8 +463,7 @@ namespace fPotencia {
         bool converged_ = converged(inc_x, Nj);
 
 
-        Iterations = 0;
-        while (!converged_ && Iterations < Max_Iter) {
+        for (unsigned i = 0; ! converged_ && i < maxIterations; ++i) {
 
             b = -1.0 * a;
 
@@ -472,7 +474,7 @@ namespace fPotencia {
 
             //prints
 
-            cout << "\n\nIter: " << Iterations << "\n" << endl;
+            cout << "\n\nIter: " << i << "\n" << endl;
             cout << "\ninc_x: \n" << inc_x << endl;
             inc_sol.print("inc sol:");
             cout << "\na: \n" << a << endl;
@@ -493,10 +495,6 @@ namespace fPotencia {
             inc_x = -1 * LU.solve(a);
 
             converged_ = converged(inc_x, Nj);
-
-
-
-            Iterations++;
         }
 
         //Unpacks the solution vector incX to the solution
