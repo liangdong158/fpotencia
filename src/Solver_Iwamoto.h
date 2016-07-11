@@ -9,6 +9,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+
+
+#ifndef SOLVER_IWAMOTO_H
+#define	SOLVER_IWAMOTO_H
+
+
 #include <cmath>
 #include "Circuit.h"
 #include "Solution.h"
@@ -17,9 +23,6 @@
 using namespace std;
 
 namespace fPotencia {
-
-#ifndef SOLVER_IWAMOTO_H
-#define	SOLVER_IWAMOTO_H
 
     /*
      * This class implements the Iwamoto method in current equations
@@ -30,6 +33,25 @@ namespace fPotencia {
     class Solver_Iwamoto {
     public:
 
+
+        /*! 
+         * \brief The default tolerance for the solution
+         *
+         * Solving the power flow equations is an interative process. For
+         * every iteration, the parameters are adjusted in order to reach
+         * convergence. The tolerance defines the allowable deviation/error
+         * after which the process halts.
+         */
+        static constexpr const double DEFAULT_SOLUTION_TOLERANCE = 1e-3;
+
+
+        /*!
+         * \brief Default maximum number of iterations after which the solver
+         *  declares failure
+         */
+        static constexpr const unsigned DEFAULT_MAX_ITERATIONS = 10;
+
+
         Solver_Iwamoto(Circuit model);
 
         Solver_Iwamoto(Circuit model, solution sol_);
@@ -39,11 +61,21 @@ namespace fPotencia {
         /*Properties*/
         Circuit Model;
 
-        double EPS = 1e-6;
 
-        int Iterations = 0;
+        /*!
+         * \brief Allowable tolerance of the solver instance
+         *
+         * \sa DEFAULT_SOLUTION_TOLERANCE
+         */
+        double tolerance;
 
-        int Max_Iter = 2;
+
+        /*!
+         * \brief Maximum number of iterations
+         *
+         * \sa DEFAULT_MAX_ITERATIONS
+         */
+        int maxIterations;
 
         Solver_State solve(); //Solves the grid
 
