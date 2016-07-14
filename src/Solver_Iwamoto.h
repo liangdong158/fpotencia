@@ -27,14 +27,14 @@ namespace fPotencia {
     /*
      * This class implements the Iwamoto method in current equations
      * for PQ buses and Power equations for PV buses according to the paper:
-     * Improvement of Power Flow Calculation with Optimization Factor Based on 
+     * Improvement of Power Flow Calculation with Optimization Factor Based on
      * Current Injection Method
      */
     class Solver_Iwamoto {
     public:
 
 
-        /*! 
+        /*!
          * \brief The default tolerance for the solution
          *
          * Solving the power flow equations is an interative process. For
@@ -75,7 +75,7 @@ namespace fPotencia {
          *
          * \sa DEFAULT_MAX_ITERATIONS
          */
-        int maxIterations;
+        unsigned maxIterations;
 
         Solver_State solve(); //Solves the grid
 
@@ -97,9 +97,9 @@ namespace fPotencia {
          * This function returns the calculated increments of x
          */
         vec y(solution sol, uint N, uint npv);
-        
+
         /*
-         * This function returns the specified increments of x 
+         * This function returns the specified increments of x
          */
         vec ys(solution sol, uint N, uint npv);
 
@@ -115,13 +115,25 @@ namespace fPotencia {
         /*
          * Solves a polynomial defined by the coeffients g0, g1, g3 and g3 such
          * that:  d + c*x + b*x^2 + a*x^3 = 0
-         * 
+         *
          * Provides the real solution using the Newton-Raphson technique
          */
         double solve_poly_deg3(double d, double c, double b, double a, double x);
 
 
-        bool converged(vec X, uint Nj); //check if the solution converged
+        /*!
+         * \brief Checks whether the current solution marks convergence
+         *
+         * The solver has converged on a solution if all coefficients in
+         * the given vector are smaller than the allowed tolerance.
+         *
+         * \param[in] X solution vector
+         *
+         * \param Nj
+         *
+         * \return `true` on convergence, `false` otherwise
+         */
+        bool converged(vec const& solution) const;
 
 
         vec pack_solution(solution sol, uint N, uint npv);
@@ -130,7 +142,7 @@ namespace fPotencia {
         solution unpack_solution(vec x,  uint N, uint npv);
 
 
-        void calculate_slack_power(); //calculate the slack bus power   
+        void calculate_slack_power(); //calculate the slack bus power
 
 
         bool checks(); //check the solvability with this method

@@ -146,7 +146,7 @@ namespace fPotencia {
         vec x(Nj);
         uint a = 0;
         uint k;
-        double val1, val2;
+
         for (uint idx = 0; idx < N + npv; idx++) { //filas
             k = PQPVPV[idx];
             if (idx < N) {
@@ -189,7 +189,7 @@ namespace fPotencia {
         for (uint x = 0; x < N; x++) { //rows
             b = 0;
             k = PQPVPV[x];
-            for (uint y = 0; y < N; y++) { //cols           
+            for (uint y = 0; y < N; y++) { //cols
                 i = PQPVPV[y];
 
                 //H
@@ -237,13 +237,13 @@ namespace fPotencia {
         for (uint x = 0; x < N; x++) { //rows
             k = PQPVPV[x];
             b = 2 * N;
-            for (uint y = 0; y < npv; y++) { //cols 
+            for (uint y = 0; y < npv; y++) { //cols
                 i = PQPVPV[y];
                 if (Model.buses[k].Type == BusType::PV) {
 
                     J(a, b) = sin(sol.D.coeff(k)) / sol.V.coeff(k); //8
 
-                    J(a + 1, b) = -cos(sol.D.coeff(k)) / sol.V.coeff(k); //81    
+                    J(a + 1, b) = -cos(sol.D.coeff(k)) / sol.V.coeff(k); //81
 
                     //only to debug the J structure
                     //J(a, b) = i * 10 + k;
@@ -259,7 +259,7 @@ namespace fPotencia {
         for (uint x = 0; x < npv; x++) { //rows
             k = PQPVPV[x];
             b = 0;
-            for (uint y = 0; y < N; y++) { //cols 
+            for (uint y = 0; y < N; y++) { //cols
                 i = PQPVPV[y];
                 if (i == k) { // a == b
                     //Fkk
@@ -296,7 +296,7 @@ namespace fPotencia {
     /*
      * Solves a polynomial defined by the coeffients g0, g1, g3 and g3 such that
      * d + c*x + b*x^2 + a*x^3 = 0
-     * 
+     *
      * Provides the real solution using the Newton-Raphson technique
      */
     double Solver_Iwamoto::solve_poly_deg3(double d, double c, double b, double a, double x) {
@@ -336,14 +336,14 @@ namespace fPotencia {
         return solve_poly_deg3(g3, g2, g1, g0, mu0);
     }
 
-    /*check if the solution converged
-     */
-    bool Solver_Iwamoto::converged(vec X, uint Nj) {
-        for (uint i = 0; i < Nj; i++)
-            if (abs(X.coeff(i)) > tolerance)
-                return false;
 
-        return true;
+    bool Solver_Iwamoto::converged(const vec &solution) const
+    {
+        auto maxCoeff = (
+                std::abs(solution.maxCoeff()) > std::abs(solution.minCoeff())
+                    ? std::abs(solution.maxCoeff())
+                    : std::abs(solution.minCoeff()));
+        return maxCoeff < tolerance;
     }
 
     /* Generates a vector X from a solution object
@@ -415,7 +415,7 @@ namespace fPotencia {
         return sol;
     }
 
-    /*calculate the slack bus power 
+    /*calculate the slack bus power
      */
     void Solver_Iwamoto::calculate_slack_power() {
         for (uint k : Model.VD_list) {
@@ -432,14 +432,10 @@ namespace fPotencia {
     /*Solves the grid
      */
     Solver_State Solver_Iwamoto::solve() {
-
-
-        Sol.print("Initial solution:");
-
-        uint npv = Model.PV_list.size();
-        uint npq = Model.PQ_list.size();
-        uint N = npq + npv;
-        uint Nj = 2 * N + npv;
+        auto npv = Model.PV_list.size();
+        auto npq = Model.PQ_list.size();
+        auto N = npq + npv;
+        auto Nj = 2 * N + npv;
 
         solution inc_sol;
         inc_sol.resize(Sol.Lenght);
@@ -447,7 +443,7 @@ namespace fPotencia {
         double mu = 0.0;
 
         mat J = Jacobian(Sol, N, npv);
-        Eigen::FullPivLU<mat>LU(J); //Full pivot LU (only once for Iwamoto)        
+        Eigen::FullPivLU<mat>LU(J); //Full pivot LU (only once for Iwamoto)
         cout << "\nJ:\n" << J << endl;
 
         vec y_s = ys(Sol, N, npv);
@@ -460,10 +456,8 @@ namespace fPotencia {
 
         vec x_e = pack_solution(Sol, N, npv);
 
-        bool converged_ = converged(inc_x, Nj);
 
-
-        for (unsigned i = 0; ! converged_ && i < maxIterations; ++i) {
+        for (unsigned i = 0; ! converged(inc_x) && i < maxIterations; ++i) {
 
             b = -1.0 * a;
 
@@ -471,17 +465,6 @@ namespace fPotencia {
             c = -1.0 * y(inc_sol, N, npv);
 
             mu = compute_mu(a, b, c, Nj, mu);
-
-            //prints
-
-            cout << "\n\nIter: " << i << "\n" << endl;
-            cout << "\ninc_x: \n" << inc_x << endl;
-            inc_sol.print("inc sol:");
-            cout << "\na: \n" << a << endl;
-            cout << "\nb: \n" << b << endl;
-            cout << "\nc: \n" << c << endl;
-            cout << "\nmu: " << mu << "\n" << endl;
-
 
             // update solution vector
             x_e += mu * inc_x;
@@ -493,8 +476,6 @@ namespace fPotencia {
             a = y_s - y_xe;
 
             inc_x = -1 * LU.solve(a);
-
-            converged_ = converged(inc_x, Nj);
         }
 
         //Unpacks the solution vector incX to the solution

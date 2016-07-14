@@ -13,9 +13,6 @@ TEST_F(IwamotoSolverTest, ConvergesOnIeee14BusTest)
     model.compile(estimate_angles);
 
     fPotencia::Solver_Iwamoto NRcs(model);
-    NRcs.Max_Iter = 10;
-    NRcs.EPS = 1e-6;
-
     auto state = NRcs.solve();
 
     ASSERT_EQ(fPotencia::Solver_State::Converged, state);
