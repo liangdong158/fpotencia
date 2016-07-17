@@ -56,9 +56,16 @@ namespace fPotencia {
 
         Solver_Iwamoto(Circuit model, solution sol_);
 
-        virtual ~Solver_Iwamoto();
 
-        /*Properties*/
+        virtual ~Solver_Iwamoto() noexcept;
+
+
+        /*!
+         * \brief The model we solve
+         *
+         * \todo This should become a per-call variable, and not remain an
+         *  instance variable, to allow for multithreading.
+         */
         Circuit Model;
 
 
@@ -76,6 +83,96 @@ namespace fPotencia {
          * \sa DEFAULT_MAX_ITERATIONS
          */
         unsigned maxIterations;
+
+
+        /*!
+         * \brief Computes the partial derivatives of power injection
+         *  with regards to the voltage.
+         *
+         * The following explains the expressions used to form the
+         * matrices:
+         *
+         *  S = diag(V) * conj(ibus) = diag(conj(ibus)) * V
+         *
+         * Partials of V & ibus w.r.t. voltage magnitudes:
+         *
+         *  dV/dVm = diag(V / abs(V))
+         *  dI/dVm = Ybus * dV/dVm = Ybus * diag(V / abs(V))
+         *
+         * Partials of V & Ibus w.r.t. voltage angles:
+         *
+         *  dV/dVa = j * diag(V)
+         *  dI/dVa = ybus * dV/dVa = ybus * j * diag(V)
+         *
+         * Partials of S w.r.t. voltage magnitudes:
+         *
+         *  dS/dVm = diag(V) * conj(dI/dVm) + diag(conj(ibus)) * dV/dVm
+         *      = diag(V) * conj(ybus * diag(V / abs(V)))
+         *          + conj(diag(ibus)) * diag(V / abs(V))
+         *
+         * Partials of S w.r.t. voltage angles:
+         *
+         *  dS/dVa = diag(V) * conj(dI/dVa) + diag(conj(Ibus)) * dV/dVa
+         *      = diag(V) * conj(ybus * j * diag(V))
+         *          + conj(diag(ibus)) * j * diag(V)
+         *      = -j * diag(V) * conj(ybus * diag(V))
+         *          + conj(diag(Ibus)) * j * diag(V)
+         *      = j * diag(V) * conj(diag(ibus) - ybus * diag(V))
+         *
+         * For more details on the derivations behind the derivative code
+         * used (in MATPOWER), see:
+         * R. D. Zimmerman, "AC Power Flows, Generalized OPF Costs and
+         * their Derivatives using Complex Matrix Notation", MATPOWER
+         * Technical Note 2, February 2010.
+         * http://www.pserc.cornell.edu/matpower/TN2-OPF-Derivatives.pdf
+         *
+         * \return Two matrices containing the partial derivatives of the
+         *  complex bus power injections with regards to the (1) voltage
+         *  magnitude and (2) the voltage angle respectively for all buses.
+         *  If `ybus` is a sparse matrix, the return values will also be
+         *  sparse.
+         */
+        std::pair<mat, mat> partialPowerInjectionDerivatives(
+                mat const& ybus,
+                vec const& voltages)
+                const;
+
+
+        /*!
+         * \brief Calculates µ, the Iwamoto acceleration parameter.
+         *
+         * Calculates the Iwamoto acceleration parameter as described in:
+         * "A Load Flow Calculation Method for Ill-Conditioned Power Systems"
+         * by Iwamoto, S. and Tamura, Y.
+         *
+         * \param[in] ybus Admittance matrix
+         *
+         * \param[in] jacobian Jacobian matrix
+         *
+         * \param[in] mismatches Mismatch vector
+         *
+         * \param[in] dV Voltage increment in complex form
+         *
+         * \param[in] solution Current solution vector as calculated by
+         *  `solve(jacobian, mismatches)`
+         *
+         * \param[in] pvpq PQ and PV indices
+         *
+         * \param[in] pq PQ indices
+         *
+         * \return The optimal multiplier for ill-conditioned systems
+         */
+        double mu(
+                mat const& ybus,
+                mat const& jacobian,
+                vec const& mismatches,
+                mat const& voltages,
+                vec const& solution,
+                std::vector<int> const& pvpq,
+                std::vector<int> const& pq)
+                const;
+
+
 
         Solver_State solve(); //Solves the grid
 
@@ -127,9 +224,7 @@ namespace fPotencia {
          * The solver has converged on a solution if all coefficients in
          * the given vector are smaller than the allowed tolerance.
          *
-         * \param[in] X solution vector
-         *
-         * \param Nj
+         * \param[in] solution solution vector
          *
          * \return `true` on convergence, `false` otherwise
          */

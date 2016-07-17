@@ -10,13 +10,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+
+#include <eigen3/Eigen/Dense>
+#include <eigen3/unsupported/Eigen/Polynomials>
+
 #include "Solver_Iwamoto.h"
 
 //using namespace arma;
 using namespace std;
 
-//include "Solver_Iwamoto.h"
-//include "Circuit.h"
 
 namespace fPotencia {
 
@@ -71,9 +73,111 @@ namespace fPotencia {
             throw std::invalid_argument("The circuit failed the solver compatibility test.");
     }
 
-    /* Destructor
-     */
-    Solver_Iwamoto::~Solver_Iwamoto() {
+
+    Solver_Iwamoto::~Solver_Iwamoto() noexcept
+    {
+    }
+
+
+    std::pair<mat, mat> Solver_Iwamoto::partialPowerInjectionDerivatives(
+            mat const& ybus,
+            vec const& voltages)
+            const
+    {
+
+        // Python code is in the comments.
+
+        // Ibus = Ybus * asmatrix(V).T
+        auto ibus = ybus * voltages.transpose();
+
+        // diagV = asmatrix(diag(V))
+        auto diagV = voltages.diagonal();
+
+        // diagIbus = asmatrix(diag( asarray(Ibus).flatten()))
+        mat diagIbus = mat::Zero(
+                ibus.cols() * ibus.rows(),
+                ibus.cols() * ibus.rows());
+        for (int i = 0, r = 0; r != ibus.rows(); ++r) {
+            for (int c = 0; c != ibus.cols(); ++c, i++) {
+                diagIbus(i, i) = ibus(r, c);
+            }
+        }
+
+        // diagVnorm = asmatrix(diag(V / abs(V)))
+        mat diagVnorm = voltages;
+        for (int i = 0; i != voltages.size(); ++i) {
+            diagVnorm[i] /= std::abs(voltages[i]);
+        }
+        diagVnorm = diagVnorm.diagonal();
+
+        // dS_dVm = diagV * conj(Ybus * diagVnorm)
+        //  + conj(diagIbus) * diagVnorm
+        auto dS_dVm = diagV * (ybus * diagVnorm).conjugate()
+                + diagIbus.conjugate() * diagVnorm;
+
+        // dS_dVa = 1j * diagV * conj(diagIbus - Ybus * diagV)
+        mat dS_dVa = 1j * diagV * (diagIbus - ybus * diagV).conjugate();
+
+        // return dS_dVm, dS_dVa
+        return std::make_pair(dS_dVm, dS_dVa);
+    }
+
+
+    double Solver_Iwamoto::mu(
+            const mat& ybus,
+            const mat& jacobian,
+            const vec& mismatches,
+            const vec& voltages,
+            const vec& solution,
+            const std::vector<int>& pvpq,
+            const std::vector<int>& pq) const
+    {
+        auto partials = partialPowerInjectionDerivatives(ybus, voltages);
+        auto dSdVm = partials.first, dSdVa = partials.second;
+
+        // J11 = dS_dVa[array([pvpq]).T, pvpq].real
+        //auto j11;
+
+        // J12 = dS_dVm[array([pvpq]).T, pq].real
+        // J21 = dS_dVa[array([pq]).T, pvpq].imag
+        // J22 = dS_dVm[array([pq]).T, pq].imag
+
+        // Theoretically this is the second derivative matrix
+        // since the Jacobian has been calculated with dV instead of V
+        // J2 = vstack([
+        //     hstack([J11, J12]),
+        //     hstack([J21, J22]) ], format="csr")
+
+        // a = F
+        mat a = mismatches;
+
+        // b = J * dx
+        mat b = jacobian * solution;
+
+        // c = 0.5 * dx * J2 * dx
+        mat c = 0.5 * solution * j2 * solution;
+
+        // g0 = -a.dot(b)
+        auto g0 = -a.dot(b);
+
+        // g1 = b.dot(b) + 2 * a.dot(c)
+        auto g1 = b.dot(b) + 2 * a.dot(c);
+
+        // g2 = -3.0 * b.dot(c)
+        auto g2 = -3.0 * b.dot(c);
+
+        //  g3 = 2.0 * c.dot(c)
+        auto g3 = 2.0 * c.dot(c);
+
+        // roots = np.roots([g3, g2, g1, g0])
+        vec polynomial(4), roots;
+        polynomial << g3, g2, g1, g0;
+        roots_to_monicPolynomial(polynomial, roots);
+
+        // Three solutions are provided, the first two are complex;
+        // only the real solution is valid:
+        // return roots[2].real
+        return roots[2];
     }
 
 
@@ -339,12 +443,9 @@ namespace fPotencia {
 
     bool Solver_Iwamoto::converged(const vec &solution) const
     {
-        auto maxCoeff = (
-                std::abs(solution.maxCoeff()) > std::abs(solution.minCoeff())
-                    ? std::abs(solution.maxCoeff())
-                    : std::abs(solution.minCoeff()));
-        return maxCoeff < tolerance;
+        return solution.lpNorm<Infinity>()< tolerance;
     }
+
 
     /* Generates a vector X from a solution object
      */
@@ -481,12 +582,9 @@ namespace fPotencia {
         //Unpacks the solution vector incX to the solution
         Sol = unpack_solution(x_e, N, npv);
 
-        Sol.print("Iwamoto solution:");
-
-        if (converged_)
-            return Solver_State::Converged;
-        else
-            return Solver_State::Not_Converged;
+        return converged(inc_x)
+                ? Solver_State::Converged
+                : Solver_State::Not_Converged;
     }
 
     /*
