@@ -15,12 +15,12 @@
 #define	SOLVER_IWAMOTO_H
 
 
-#include <cmath>
+#include <vector>
+#include <eigen3/Eigen/Dense>
+
 #include "Circuit.h"
 #include "Solution.h"
 
-//using namespace arma;
-using namespace std;
 
 namespace fPotencia {
 
@@ -32,6 +32,10 @@ namespace fPotencia {
      */
     class Solver_Iwamoto {
     public:
+
+
+        //! \brief Matrix or vector indices
+        typedef std::vector<mat::Index> Indices;
 
 
         /*!
@@ -132,9 +136,9 @@ namespace fPotencia {
          *  If `ybus` is a sparse matrix, the return values will also be
          *  sparse.
          */
-        std::pair<mat, mat> partialPowerInjectionDerivatives(
-                mat const& ybus,
-                vec const& voltages)
+        std::pair<cx_mat, cx_mat> partialPowerInjectionDerivatives(
+                cx_mat const& ybus,
+                cx_vec const& voltages)
                 const;
 
 
@@ -163,13 +167,13 @@ namespace fPotencia {
          * \return The optimal multiplier for ill-conditioned systems
          */
         double mu(
-                mat const& ybus,
-                mat const& jacobian,
+                cx_mat const& ybus,
+                cx_mat const& jacobian,
                 vec const& mismatches,
-                mat const& voltages,
+                cx_vec const& voltages,
                 vec const& solution,
-                std::vector<int> const& pvpq,
-                std::vector<int> const& pq)
+                Indices const& pvpq,
+                Indices const& pq)
                 const;
 
 

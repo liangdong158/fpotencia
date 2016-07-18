@@ -79,9 +79,10 @@ namespace fPotencia {
     }
 
 
-    std::pair<mat, mat> Solver_Iwamoto::partialPowerInjectionDerivatives(
-            mat const& ybus,
-            vec const& voltages)
+    std::pair<cx_mat, cx_mat>
+    Solver_Iwamoto::partialPowerInjectionDerivatives(
+            cx_mat const& ybus,
+            cx_vec const& voltages)
             const
     {
 
@@ -94,7 +95,7 @@ namespace fPotencia {
         auto diagV = voltages.diagonal();
 
         // diagIbus = asmatrix(diag( asarray(Ibus).flatten()))
-        mat diagIbus = mat::Zero(
+        cx_mat diagIbus = cx_mat::Zero(
                 ibus.cols() * ibus.rows(),
                 ibus.cols() * ibus.rows());
         for (int i = 0, r = 0; r != ibus.rows(); ++r) {
@@ -124,29 +125,55 @@ namespace fPotencia {
 
 
     double Solver_Iwamoto::mu(
-            const mat& ybus,
-            const mat& jacobian,
+            const cx_mat& ybus,
+            const cx_mat& jacobian,
             const vec& mismatches,
-            const vec& voltages,
+            const cx_vec& voltages,
             const vec& solution,
-            const std::vector<int>& pvpq,
-            const std::vector<int>& pq) const
+            const Indices& pvpq,
+            const Indices& pq)
+            const
     {
+        assert(pvpq.size() == pq.size());
+
         auto partials = partialPowerInjectionDerivatives(ybus, voltages);
         auto dSdVm = partials.first, dSdVa = partials.second;
 
         // J11 = dS_dVa[array([pvpq]).T, pvpq].real
-        //auto j11;
+        mat j11(pvpq.size());
+        for (auto const& i: pvpq) {
+            j11 << dSdVa(i, i).real();
+        }
 
-        // J12 = dS_dVm[array([pvpq]).T, pq].real
+        // J12 = dS_dVm[array([pvpq]).T, pq].real     # [row, col]?
+        mat j12(pvpq.size());
+        for (std::vector<int>::size_type i = 0; i != pvpq.size(); ++i) {
+            j12 << dSdVm(pvpq[i], pq[i]).real();
+        }
+
         // J21 = dS_dVa[array([pq]).T, pvpq].imag
+        mat j21(pvpq.size());
+        for (std::vector<int>::size_type i = 0; i != pvpq.size(); ++i) {
+            j21 << dSdVa(pq[i], pvpq[i]).imag();
+        }
+
         // J22 = dS_dVm[array([pq]).T, pq].imag
+        mat j22(pvpq.size());
+        for (std::vector<int>::size_type i = 0; i != pvpq.size(); ++i) {
+            j22 << dSdVa(pq[i], pq[i]).imag();
+        }
 
         // Theoretically this is the second derivative matrix
         // since the Jacobian has been calculated with dV instead of V
         // J2 = vstack([
         //     hstack([J11, J12]),
         //     hstack([J21, J22]) ], format="csr")
+        mat j11j12(j11.rows(), j11.cols() + j12.cols());
+        j11j12<< j11, j12;
+        mat j21j22(j21.rows(), j21.cols() + j22.cols());
+        j21j22 << j11, j12;
+        mat j2(j11j12.rows() + j21j22.rows(), j11j12.cols());
+        j2 << j11j12, j21j22;
 
         // a = F
         mat a = mismatches;
@@ -170,14 +197,14 @@ namespace fPotencia {
         auto g3 = 2.0 * c.dot(c);
 
         // roots = np.roots([g3, g2, g1, g0])
-        vec polynomial(4), roots;
+        cx_vec polynomial(4), roots;
         polynomial << g3, g2, g1, g0;
         roots_to_monicPolynomial(polynomial, roots);
 
         // Three solutions are provided, the first two are complex;
         // only the real solution is valid:
         // return roots[2].real
-        return roots[2];
+        return roots[2].real();
     }
 
 
@@ -538,6 +565,7 @@ namespace fPotencia {
         auto N = npq + npv;
         auto Nj = 2 * N + npv;
 
+
         solution inc_sol;
         inc_sol.resize(Sol.Lenght);
         vec b, c;
@@ -545,7 +573,6 @@ namespace fPotencia {
 
         mat J = Jacobian(Sol, N, npv);
         Eigen::FullPivLU<mat>LU(J); //Full pivot LU (only once for Iwamoto)
-        cout << "\nJ:\n" << J << endl;
 
         vec y_s = ys(Sol, N, npv);
 
