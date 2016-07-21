@@ -247,6 +247,11 @@ namespace fPotencia {
      * This should be called every time the circuit topology changes
      */
     void Circuit::compile(bool guess_angles) {
+        // Make sure we do not double-add:
+
+        loadBusIndices.clear();
+        slackBusIndices.clear();
+        generatorBusIndices.clear();
 
         //Calculate the base power in a comparable scale to the power in the grid
         double maxpower = get_max_power();
@@ -259,7 +264,6 @@ namespace fPotencia {
         for (uint i = 0; i < externalGrids.size(); i++)
             if (buses[externalGrids[i].bus].Type == undefined_bus_type) {
                 buses[externalGrids[i].bus].Type = VD;
-                //VD_list.push_back(buses[external_grids[i].bus].index);
             }
 
         /*the presence of an generator makes the bus PV (if it is voltage
