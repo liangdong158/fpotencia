@@ -17,7 +17,7 @@ SolverTest::~SolverTest() noexcept
 
 fPotencia::Circuit SolverTest::generateIeee14Bus() const
 {
-    Circuit model("IEEE 14 Bus");
+    Circuit model;
 
 
     // Buses:
@@ -56,7 +56,7 @@ fPotencia::Circuit SolverTest::generateIeee14Bus() const
     // External Grid:
 
     ExternalGrid eg("External1", b1.index);
-    model.external_grids.push_back(eg);
+    model.externalGrids.push_back(eg);
 
 
     // Line Types and Lines:
@@ -131,6 +131,7 @@ fPotencia::Circuit SolverTest::generateIeee14Bus() const
     Load ld13("Load13", b13.index, 13.5, 5.8);
     Load ld14("Load14", b14.index, 14.9, 5.0);
 
+    model.loads.push_back(ld1);
     model.loads.push_back(ld2);
     model.loads.push_back(ld3);
     model.loads.push_back(ld4);

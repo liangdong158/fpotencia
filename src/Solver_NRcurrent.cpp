@@ -61,7 +61,7 @@ namespace fPotencia {
         bool val = true;
 
         //Only one slack bus allowed
-        if (Model.VD_list.size() > 1)
+        if (Model.slackBusIndices.size() > 1)
             val = false;
 
         return val;
@@ -71,7 +71,7 @@ namespace fPotencia {
      */
     void Solver_NRcurrent::fill_especifyed_values() {
 
-        uint N = Model.PQ_list.size() + Model.PV_list.size();
+        uint N = Model.loadBusIndices.size() + Model.generatorBusIndices.size();
         for (uint i = 0; i < Model.buses.size(); i++) {
             if (Model.buses[i].Type == BusType::PQ || Model.buses[i].Type == BusType::PV)
                 PQPV.push_back(i);
@@ -348,7 +348,7 @@ namespace fPotencia {
     /*calculate the slack bus power 
      */
     void Solver_NRcurrent::calculate_slack_power() {
-        for (uint k : Model.VD_list) {
+        for (uint k : Model.slackBusIndices) {
             cx_double I(0.0, 0.0);
             for (uint j = 0; j < Model.buses.size(); j++) {
                 I += Model.Y.coeff(k, j) * Sol.V(j);
@@ -364,8 +364,8 @@ namespace fPotencia {
 
         Sol.print("Initial solution:");
 
-        uint npv = Model.PV_list.size();
-        uint npq = Model.PQ_list.size();
+        uint npv = Model.generatorBusIndices.size();
+        uint npq = Model.loadBusIndices.size();
         uint N = npq + npv;
         uint Nj = 2 * N;
 

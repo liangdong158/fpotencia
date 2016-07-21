@@ -13,8 +13,8 @@ TEST_F(NRpolarSolverTest, ConvergesOnIeee14BusTest)
     model.compile(estimate_angles);
 
     fPotencia::Solver_NRpolar NRcs(model);
-    NRcs.Max_Iter = 6;
-    NRcs.EPS = 1e-9;
+    NRcs.maxIterations = 6;
+    NRcs.tolerance = 1e-9;
 
     auto state = NRcs.solve();
 

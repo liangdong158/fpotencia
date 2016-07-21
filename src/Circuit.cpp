@@ -27,23 +27,13 @@ namespace fPotencia {
     /*
      * Circuit class default onstructor
      */
-    Circuit::Circuit() {
-        Name = "Some unnamed circuit";
-        default_voltage = cx_double(1.0, 0.0);
+    Circuit::Circuit(): default_voltage(1.0, 0.0)
+    {
     }
 
-    /*
-     * Circuit class constructor
-     */
-    Circuit::Circuit(string name) {
-        Name = name;
-        default_voltage = cx_double(1.0, 0.0);
-    }
 
-    /*
-     * Circuit class destructor
-     */
-    Circuit::~Circuit() {
+    Circuit::~Circuit() noexcept
+    {
     }
 
     /*
@@ -67,8 +57,6 @@ namespace fPotencia {
                 bus.index = buses[buses.size() - 1].index + 1; //Sequencial bus numbering
 
             buses.push_back(bus);
-
-            //cout << "Bus added at " << bus.index << endl;
         } else {
             cout << "The bus " << bus.Name << " has been already added, therefore this object is not being added" << endl;
         }
@@ -235,8 +223,8 @@ namespace fPotencia {
         cx_mat Yred(Y);
 
         //remove a column and a row in those indices matching the slack buses indices
-        for (uint i = 0; i < VD_list.size(); i++)
-            removeCross(Yred, VD_list[i]);
+        for (uint i = 0; i < slackBusIndices.size(); i++)
+            removeCross(Yred, slackBusIndices[i]);
 
         // perform a fast LU inverse of the reduced admittance matrix
         //this leads to the reduced impedance matrix (of the wrong dimensions)
@@ -245,8 +233,8 @@ namespace fPotencia {
 
         //to make it of the correct dimensions, lets add zero rows and columns
         //where there were removed at the beginning
-        for (uint i = 0; i < VD_list.size(); i++)
-            expandOnPoint(Zred, VD_list[i]);
+        for (uint i = 0; i < slackBusIndices.size(); i++)
+            expandOnPoint(Zred, slackBusIndices[i]);
 
 
         Eigen::FullPivLU<cx_mat> lu2(Y);
@@ -268,9 +256,9 @@ namespace fPotencia {
         //Calculate the bus types
 
         //the presence of an external grid makes the bus VD (or slack)
-        for (uint i = 0; i < external_grids.size(); i++)
-            if (buses[external_grids[i].bus].Type == undefined_bus_type) {
-                buses[external_grids[i].bus].Type = VD;
+        for (uint i = 0; i < externalGrids.size(); i++)
+            if (buses[externalGrids[i].bus].Type == undefined_bus_type) {
+                buses[externalGrids[i].bus].Type = VD;
                 //VD_list.push_back(buses[external_grids[i].bus].index);
             }
 
@@ -308,7 +296,6 @@ namespace fPotencia {
         for (uint i = 0; i < buses.size(); i++) {//final check
             if (buses[i].Type == undefined_bus_type) {
                 buses[i].Type = PQ;
-                //PQ_list.push_back(buses[i].index);
             }
 
             if (buses[i].nominal_voltage > Vbase)
@@ -316,12 +303,19 @@ namespace fPotencia {
 
 
             //set the bus types lists
-            if (buses[i].Type == VD)
-                VD_list.push_back(buses[i].index);
-            else if (buses[i].Type == PQ)
-                PQ_list.push_back(buses[i].index);
-            else if (buses[i].Type == PV)
-                PV_list.push_back(buses[i].index);
+            switch (buses[i].Type) {
+            case VD:
+                slackBusIndices.push_back(buses[i].index);
+                break;
+            case PQ:
+                loadBusIndices.push_back(buses[i].index);
+                break;
+            case PV:
+                generatorBusIndices.push_back(buses[i].index);
+                break;
+            default:
+                throw std::invalid_argument("Unknown bus type");
+            }
         }
 
         Zbase = Vbase * Vbase / Sbase;
@@ -425,14 +419,10 @@ namespace fPotencia {
 
             cx_sol.S(i) = cx_double(sol.P[i], sol.Q[i]);
             cx_sol.V(i) = cx_double(sol.V[i], sol.D[i]);
-
-            //cx_sol.print("Initial CX Solution:");
         }
 
         sol.initialized = true;
         cx_sol.initialized = true;
-        //sol.print("Initial Solution:");
-        //cx_sol.print("Initial CX Solution:");
     }
 
     /*
@@ -634,7 +624,6 @@ namespace fPotencia {
             mismatch += abs(delta(i, 0));
 
         mismatch /= n;
-        cout << "\n" + Name + " solution mismatch: " << mismatch << "\n" << delta << endl;
     }
 
     /*This function sets the load and generation power values (in actual values
