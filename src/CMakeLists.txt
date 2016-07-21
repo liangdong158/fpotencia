@@ -1,4 +1,6 @@
 set(fpotencia_SOURCES
+    Solver.cpp
+    UnfittingSolverException.cpp
     LineConstructors.cpp
     Solver_ZBusGS.cpp
     Solution.cpp
@@ -21,6 +23,8 @@ set(fpotencia_SOURCES
     ExternalGrid.cpp)
 
 set(fpotencia_HEADERS
+    Solver.h
+    UnfittingSolverException.h
     Circuit3.h
     Circuit.h
     TransformerConstructors.h
@@ -45,10 +49,8 @@ set(fpotencia_HEADERS
     CommonFunctions.h
     Generator.h)
 
+include_directories(${eigen3_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 add_library(fpotencia ${fpotencia_SOURCES})
-target_include_directories(
-    fpotencia
-    PUBLIC ${eigen3_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 target_link_libraries(fpotencia
     Boost::graph)
 set_property(TARGET fpotencia PROPERTY CXX_STANDARD 11)

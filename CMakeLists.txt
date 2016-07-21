@@ -6,7 +6,7 @@ include(GNUInstallDirs)
 
 find_package(GTest)
 find_package(Boost REQUIRED COMPONENTS graph)
-pkg_check_modules(REQUIRED eigen3)
+pkg_check_modules(eigen3 REQUIRED eigen3>=3.2.8)
 
 add_subdirectory(src)
 
