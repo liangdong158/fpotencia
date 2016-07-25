@@ -20,3 +20,23 @@ TEST_F(NRrectSolverTest, ConvergesOnIeee14BusTest)
 
     ASSERT_EQ(fPotencia::Solver_State::Converged, state);
 }
+
+
+TEST_F(NRrectSolverTest, SolvesLynnPowellBusTest)
+{
+    auto model = generateLynnPowellWithoutGenerator();
+
+    bool estimate_angles = false;
+    model.compile(estimate_angles);
+
+    fPotencia::Solver_NRrect NRcs(model);
+    NRcs.Max_Iter = 60;
+    NRcs.EPS = 1e-9;
+
+    auto state = NRcs.solve();
+
+    ASSERT_EQ(fPotencia::Solver_State::Converged, state);
+
+    ASSERT_NEAR(NRcs.Model.buses.at(1).voltage_pu.imag(), -0.026648, NRcs.EPS);
+    ASSERT_NEAR(NRcs.Model.buses.at(1).voltage_pu.real(), 0.974707, NRcs.EPS);
+}
