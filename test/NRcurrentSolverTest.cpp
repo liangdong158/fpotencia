@@ -20,3 +20,23 @@ TEST_F(NRcurrentSolverTest, ConvergesOnIeee14BusTest)
 
     ASSERT_EQ(fPotencia::Solver_State::Converged, state);
 }
+
+TEST_F(NRcurrentSolverTest, SolvesLynnPowellBusTest)
+{
+    auto model = generateLynnPowell();
+
+    bool estimate_angles = false;
+    model.compile(estimate_angles);
+
+    fPotencia::Solver_NRcurrent NRcs(model);
+    NRcs.Max_Iter = 60;
+    NRcs.EPS = 1e-9;
+
+    auto state = NRcs.solve();
+
+    ASSERT_EQ(fPotencia::Solver_State::Converged, state);
+
+    for (auto& bus: NRcs.Model.buses) {
+        bus.print();
+    }
+}

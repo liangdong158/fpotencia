@@ -12,6 +12,7 @@ public:
     SolverTest();
     virtual ~SolverTest() noexcept;
     fPotencia::Circuit generateIeee14Bus() const;
+    fPotencia::Circuit generateLynnPowell() const;
 };
 
 #endif // SOLVERTEST_H

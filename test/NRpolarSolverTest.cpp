@@ -20,3 +20,21 @@ TEST_F(NRpolarSolverTest, ConvergesOnIeee14BusTest)
 
     ASSERT_EQ(fPotencia::Solver_State::Converged, state);
 }
+
+
+TEST_F(NRpolarSolverTest, SolvesLynnPowellBusTest)
+{
+    auto model = generateLynnPowell();
+    model.compile(false);
+
+    fPotencia::Solver_NRpolar solver(model);
+    solver.tolerance = 1e-9;
+    solver.maxIterations = 100;
+    auto state = solver.solve();
+
+    ASSERT_EQ(fPotencia::Solver_State::Converged, state);
+
+    for (auto& bus: solver.Model.buses) {
+        bus.print();
+    }
+}
