@@ -1,3 +1,4 @@
+#if 0
 /*
  * File:   Solver_NRpolar.h
  * Author: Santiago Peñate Vera
@@ -253,3 +254,5 @@ namespace fPotencia {
 #endif	/* SOLVER_IWAMOTO_H */
 
 }
+
+#endif

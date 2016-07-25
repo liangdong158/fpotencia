@@ -1,3 +1,4 @@
+#if 0
 #ifndef IWAMOTOSOLVERTEST_H
 #define IWAMOTOSOLVERTEST_H
 
@@ -11,4 +12,6 @@ public:
     virtual ~IwamotoSolverTest() noexcept {}
 };
 
+
 #endif // IWAMOTOSOLVERTEST_H
+#endif

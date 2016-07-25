@@ -1,3 +1,4 @@
+#if 0
 #include <gtest/gtest.h>
 
 #include "fpotencia.h"
@@ -17,3 +18,5 @@ TEST_F(IwamotoSolverTest, ConvergesOnIeee14BusTest)
 
     ASSERT_EQ(fPotencia::Solver_State::Converged, state);
 }
+
+#endif

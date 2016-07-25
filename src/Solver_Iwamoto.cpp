@@ -1,3 +1,4 @@
+#if 0
 /*
  * File:   Solver_NRpolar.cpp
  * Author: Santiago Peñate Vera
@@ -621,3 +622,5 @@ namespace fPotencia {
     }
 
 }
+
+#endif
