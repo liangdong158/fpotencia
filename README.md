@@ -42,7 +42,7 @@ To create a release build of a shared library, e.g., for packaging, issue:
         ..
     make
     make test                           # Optionally
-    make apidoc                         # Optionally
+    make doc                            # Optionally
     make install
 
 If you would like to contribute to fPotencia, `-DCMAKE_BUILD_TYPE=Debug` is
@@ -59,3 +59,13 @@ Of course, for a deeper dive, the API documentation is preferrable. However,
 if you just want to use fPotencia to perform a load flow analysis of a grid
 you supply, the example grids in `test/SolverTest.cpp` are the only
 instruction you're going to need.
+
+
+## Roadmap
+
+0.9::
+  - API overhaul
+  - Performance Improvements
+1.0::
+  - More test cases
+  - Reliable PV <-> PQ switching

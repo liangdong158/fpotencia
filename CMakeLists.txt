@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
-project(fPotencia VERSION 1.0.0 LANGUAGES CXX)
+project(fPotencia VERSION 0.8 LANGUAGES CXX)
 
+include(FindDoxygen)
 include(FindPkgConfig)
 include(GNUInstallDirs)
 
@@ -15,10 +16,17 @@ option(BUILD_UNSUPPORTED_SOLVERS
 
 
 configure_file("config.h.in" "config.h")
+configure_file("Doxyfile.in" "Doxyfile")
 
 add_subdirectory(src)
 
 if(${GTEST_FOUND})
     enable_testing()
     add_subdirectory(test)
+endif()
+
+if(${DOXYGEN_FOUND})
+    add_custom_target(doc
+        COMMAND ${DOXYGEN_EXECUTABLE}
+        DEPENDS Doxyfile.in)
 endif()
