@@ -1,11 +1,21 @@
 set(fpotencia_test_SOURCES
     SolverTest.cpp
-    JacobiSolverTest.cpp
-    ZBusGSSolverTest.cpp
-    NRrectSolverTest.cpp
     NRpolarSolverTest.cpp
     NRcurrentSolverTest.cpp
     main.cpp)
+
+set(fpotencia_test_UNSUPPORTED_SOLVERS_SOURCES
+    JacobiSolverTest.cpp
+    ZBusGSSolverTest.cpp
+    NRrectSolverTest.cpp)
+
+
+if(${BUILD_UNSUPPORTED_SOLVERS})
+    list(APPEND
+        ${fpotencia_test_SOURCES}
+        ${fpotencia_test_UNSUPPORTED_SOLVERS_SOURCES})
+endif()
+
 
 include_directories(${eigen3_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 add_executable(fpotencia_test ${fpotencia_test_SOURCES})

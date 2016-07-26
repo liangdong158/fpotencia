@@ -8,6 +8,14 @@ find_package(GTest)
 find_package(Boost REQUIRED COMPONENTS graph)
 pkg_check_modules(eigen3 REQUIRED eigen3>=3.2.8)
 
+
+option(BUILD_UNSUPPORTED_SOLVERS
+    "Build currently unsupported (i.e., test-failing) Load Flow solvers"
+    OFF)
+
+
+configure_file("config.h.in" "config.h")
+
 add_subdirectory(src)
 
 if(${GTEST_FOUND})

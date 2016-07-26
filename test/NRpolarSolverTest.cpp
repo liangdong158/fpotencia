@@ -97,10 +97,6 @@ TEST_F(NRpolarSolverTest, SolvesLynnPowellBusWithGeneratorTest)
 
     ASSERT_EQ(fPotencia::Solver_State::Converged, state);
 
-    for (auto& bus: solver.Model.buses) {
-        bus.print();
-    }
-
 
     static const double maxError = 1e-4;
 
