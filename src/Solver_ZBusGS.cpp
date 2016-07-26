@@ -29,8 +29,8 @@ namespace fPotencia {
             Sol = Model.get_initial_cx_solution();
         }
 
-        BUSES.reserve(Model.PQ_list.size()); // preallocate memory
-        BUSES.insert(BUSES.end(), Model.PQ_list.begin(), Model.PQ_list.end());
+        BUSES.reserve(Model.loadBusIndices.size()); // preallocate memory
+        BUSES.insert(BUSES.end(), Model.loadBusIndices.begin(), Model.loadBusIndices.end());
         //BUSES.insert(BUSES.end(), Model.PV_list.begin(), Model.PV_list.end());
 
         E0.resize(Model.buses.size());
@@ -57,11 +57,11 @@ namespace fPotencia {
         bool val = true;
 
         //The Zbus only works with PQ buses
-        if (Model.PV_list.size() > 0)
+        if (Model.generatorBusIndices.size() > 0)
             val = false;
 
         //Only one slack bus allowed
-        if (Model.VD_list.size() > 1)
+        if (Model.slackBusIndices.size() > 1)
             val = false;
 
         return val;
@@ -90,7 +90,7 @@ namespace fPotencia {
      */
     void Solver_ZBusGS::calculate_C(cx_vec * V) {
 
-        uint s = Model.VD_list[0]; //slack bus index
+        uint s = Model.slackBusIndices[0]; //slack bus index
         cx_double V1 = (*V).coeff(s); //slack bus voltage
 
         for (int k : BUSES) {
@@ -179,7 +179,7 @@ namespace fPotencia {
     void Solver_ZBusGS::calculate_slack_power() {
         //VD (or slack) bus
         cx_double I(0.0, 0.0);
-        for (int k : Model.VD_list) {
+        for (int k : Model.slackBusIndices) {
             for (uint j = 0; j < Model.buses.size(); j++) {
                 I += Model.Y.coeff(k, j) * Sol.V.coeff(j);
             }

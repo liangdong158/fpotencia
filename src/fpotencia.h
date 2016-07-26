@@ -30,7 +30,6 @@
 #include "Solver_NRpolar.h"
 #include "Solver_NRrect.h"
 #include "Solver_Jacobi.h"
-#include "Solver_Iwamoto.h"
 #include "Solver_NRcurrent.h"
 
 #include "CommonFunctions.h"
