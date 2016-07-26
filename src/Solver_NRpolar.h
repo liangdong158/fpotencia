@@ -15,11 +15,14 @@
 
 
 #include <cmath>
+
+#include "Solver.h"
 #include "Circuit.h"
 #include "Solution.h"
 
-//using namespace arma;
+
 using namespace std;
+
 
 namespace fPotencia {
 
@@ -27,27 +30,9 @@ namespace fPotencia {
      * \brief This class implements the Nerwton-Raphson method of load flow
      *  analysis using polar coordinates.
      */
-    class Solver_NRpolar
+    class NRpolarSolver: public Solver
     {
     public:
-
-
-        /*!
-         * \brief The default tolerance for the solution
-         *
-         * Solving the power flow equations is an interative process. For
-         * every iteration, the parameters are adjusted in order to reach
-         * convergence. The tolerance defines the allowable deviation/error
-         * after which the process halts.
-         */
-        static constexpr const double DEFAULT_SOLUTION_TOLERANCE = 1e-3;
-
-
-        /*!
-         * \brief Default maximum number of iterations after which the solver
-         *  declares failure
-         */
-        static constexpr const unsigned DEFAULT_MAX_ITERATIONS = 10;
 
 
         /*!
@@ -56,7 +41,7 @@ namespace fPotencia {
          * \param[in] model The circuit the solver should perform load flow
          *  analysis on
          */
-        Solver_NRpolar(Circuit const& model);
+        NRpolarSolver(Circuit const& model);
 
 
         /*!
@@ -69,10 +54,10 @@ namespace fPotencia {
          * \param[in] sol_ The initial solution the solver should start
          *  working with
          */
-        Solver_NRpolar(Circuit const& model, solution const& sol_);
+        NRpolarSolver(Circuit const& model, solution const& sol_);
 
 
-        virtual ~Solver_NRpolar() noexcept;
+        virtual ~NRpolarSolver() noexcept;
 
 
         //!  \brief The circuit model the solver analyses
@@ -96,13 +81,33 @@ namespace fPotencia {
 
 
         /*!
+         * \brief Solves a polynomial of 3rd degree
+         *
+         * This method solves a polynomial defined by the coeffients
+         * g0, g1, g3 and g3 such that $d + c*x + b*x^2 + a*x^3 = 0$.
+         *
+         * Provides the real solution using the Newton-Raphson technique
+         */
+        double solve3rdDegreePolynomial(
+                double d,
+                double c,
+                double b,
+                double a,
+                double x) const;
+
+
+        //! \brief Checks whether a particular solution converged
+        bool converged(vec const& PQinc, uint npqpvpq) const;
+
+
+        /*!
          * \brief Solves the grid
          *
          * \return Solver_State::converged if the grid was solved
          *
          * \sa Solver_State
          */
-        Solver_State solve();
+        virtual Solver::Result powerFlow(Circuit& grid) override;
 
 
         void update_solution_power_from_circuit();
@@ -126,9 +131,6 @@ namespace fPotencia {
         void Jacobian(mat &J, vec &V, vec &D, uint npq, uint npv); //calculate the jacobian, J is passed by refference
         
         double mu(mat &J, mat &J2, vec &F, vec &dV, vec &dD, vec & dx, uint npq, uint npv);
-        
-        double solve_poly_deg3(double d, double c, double b, double a, double x) ;
-
         void get_power_inc(vec &PQinc, uint npq, uint npv); //PQinc is passed by refference
 
         void calculate_Q(uint npq, uint npv); //calculate the reative power at the PV buses
@@ -136,8 +138,6 @@ namespace fPotencia {
         double Q(uint k);
 
         double P(uint k);
-
-        bool converged(vec PQinc, uint npqpvpq); //check if the solution converged
 
         void update_solution(vec X, uint npq, uint npv);
         

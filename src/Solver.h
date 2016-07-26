@@ -18,6 +18,7 @@ namespace fPotencia {
         {
             Solved,
             NotSolved,
+            NotSolveable,
             SolverUnfitForGrid
         };
 
@@ -30,14 +31,14 @@ namespace fPotencia {
          * convergence. The tolerance defines the allowable deviation/error
          * after which the process halts.
          */
-        static constexpr const double DEFAULT_SOLUTION_TOLERANCE = 1e-3;
+        static constexpr const double DEFAULT_SOLUTION_TOLERANCE = 1e-9;
 
 
         /*!
          * \brief Default maximum number of iterations after which the solver
          *  declares failure
          */
-        static constexpr const unsigned DEFAULT_MAX_ITERATIONS = 10;
+        static constexpr const unsigned DEFAULT_MAX_ITERATIONS = 100;
 
 
         /*!

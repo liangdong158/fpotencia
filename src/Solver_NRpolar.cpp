@@ -18,7 +18,7 @@ namespace fPotencia {
     /*
      * constructor
      */
-    Solver_NRpolar::Solver_NRpolar(Circuit const& model):
+    NRpolarSolver::NRpolarSolver(Circuit const& model):
             Model(model),
             tolerance(DEFAULT_SOLUTION_TOLERANCE),
             maxIterations(DEFAULT_MAX_ITERATIONS),
@@ -76,21 +76,21 @@ namespace fPotencia {
     }
 
 
-    Solver_NRpolar::Solver_NRpolar(
+    NRpolarSolver::NRpolarSolver(
             const Circuit& model,
             const solution& sol_):
-                Solver_NRpolar(model)
+                NRpolarSolver(model)
     {
         Sol = sol_;
     }
 
 
-    Solver_NRpolar::~Solver_NRpolar() noexcept
+    NRpolarSolver::~NRpolarSolver() noexcept
     {
     }
 
 
-    bool Solver_NRpolar::checks() const
+    bool NRpolarSolver::checks() const
     {
         return Model.slackBusIndices.size() <= 1;
     }
@@ -98,7 +98,7 @@ namespace fPotencia {
     /*//////////////////////////////////////////////////////////////////////////
      * Calculate the slack bus power
      */
-    void Solver_NRpolar::calculate_slack_power() {        
+    void NRpolarSolver::calculate_slack_power() {        
         for (auto k: Model.slackBusIndices) {
             cx_double I(0.0, 0.0);
             for (uint j = 0; j < Model.buses.size(); j++) {
@@ -113,7 +113,7 @@ namespace fPotencia {
     /*//////////////////////////////////////////////////////////////////////////
      * Calculate the reactive power of the bus k (usefull for PV uses)
      */
-    void Solver_NRpolar::calculate_Q(uint npq, uint npv) {
+    void NRpolarSolver::calculate_Q(uint npq, uint npv) {
         double val;
         uint k;
         for (uint i = npq - 1; i < npq + npv; i++) {
@@ -126,7 +126,7 @@ namespace fPotencia {
     /*//////////////////////////////////////////////////////////////////////////
      * Calculate the active power at a bus
      */
-    double Solver_NRpolar::P(uint k) {
+    double NRpolarSolver::P(uint k) {
         double val = 0.0;
         for (uint j = 0; j < Model.buses.size(); j++) {
             val += Sol.V.coeff(j)
@@ -139,7 +139,7 @@ namespace fPotencia {
     /*//////////////////////////////////////////////////////////////////////////
      * Calculate the reactive power at a bus
      */
-    double Solver_NRpolar::Q(uint k) {
+    double NRpolarSolver::Q(uint k) {
         double val = 0.0;
         for (uint j = 0; j < Model.buses.size(); j++) {
             val += Sol.V.coeff(j)
@@ -152,7 +152,7 @@ namespace fPotencia {
     /*
      * This function corects the PV buses that exeed the reative power limit
      */
-    void Solver_NRpolar::correct_PVbuses_violating_Q(uint &npq, uint &npv, mat &J, vec &K, vec &X) {
+    void NRpolarSolver::correct_PVbuses_violating_Q(uint &npq, uint &npv, mat &J, vec &K, vec &X) {
 
         /*Find the PV buses that violate the reative power limit*/
         vector<int> lst;
@@ -196,7 +196,7 @@ namespace fPotencia {
     /*//////////////////////////////////////////////////////////////////////////
      * Calculate the jacobian of the circuit
      */
-    void Solver_NRpolar::Jacobian(mat &J, vec &V, vec &D, uint npq, uint npv) {
+    void NRpolarSolver::Jacobian(mat &J, vec &V, vec &D, uint npq, uint npv) {
         //matrix(rows, cols)
         uint npqpv = npq + npv;
         double val;
@@ -347,30 +347,32 @@ namespace fPotencia {
     return roots[2].real
      
      */
-    
-    /*
-     * Solves a polynomial defined by the coeffients g0, g1, g3 and g3 such that
-     * d + c*x + b*x^2 + a*x^3 = 0
-     * 
-     * Provides the real solution using the Newton-Raphson technique
-     */
-    double Solver_NRpolar::solve_poly_deg3(double d, double c, double b, double a, double x) {
-        double eps = 1e-9;
 
+
+    double NRpolarSolver::solve3rdDegreePolynomial(
+            double d,
+            double c,
+            double b,
+            double a,
+            double x)
+            const
+    {
         double fx = a * x * x * x + b * x * x + c * x + d;
-        double fxd = 3 * a * x * x + 2 * b * x + c;
+        double fxd = 3.0 * a * x * x + 2.0 * b * x + c;
         double incx = fx / fxd;
 
-        while (abs(incx) > eps) {
+        while (abs(incx) > tolerance) {
             x -= incx;
             fx = a * x * x * x + b * x * x + c * x + d;
-            fxd = 3 * a * x * x + 2 * b * x + c;
+            fxd = 3.0 * a * x * x + 2.0 * b * x + c;
             incx = fx / fxd;
         }
+
         return x;
     }
     
-    double Solver_NRpolar::mu(mat &J, mat &J2, vec &F, vec &dV, vec &dD, vec & dx, uint npq, uint npv){
+
+    double NRpolarSolver::mu(mat &J, mat &J2, vec &F, vec &dV, vec &dD, vec & dx, uint npq, uint npv){
         
         
        // cout << "\n\n\nincV:\n" << dV << "\n\nincD:\n" << dD << "\n\ndx:\n" << dx <<  "\n\nF:\n" << F << endl;
@@ -398,7 +400,7 @@ namespace fPotencia {
         double g2 = -3.0 * b.dot(c);
         double g3 = 2.0 * c.dot(c);
            
-        double sol = solve_poly_deg3(g3, g2, g1, g0, 1.0);
+        double sol = solve3rdDegreePolynomial(g3, g2, g1, g0, 1.0);
         return sol;         
     }
     
@@ -407,7 +409,7 @@ namespace fPotencia {
     /*//////////////////////////////////////////////////////////////////////////
      * Calculate the power increments
      */
-    void Solver_NRpolar::get_power_inc(vec& PQinc, uint npq, uint npv) {
+    void NRpolarSolver::get_power_inc(vec& PQinc, uint npq, uint npv) {
 
         uint npqpv = npq + npv;
         uint k;
@@ -424,11 +426,9 @@ namespace fPotencia {
 
     }
 
-    /*//////////////////////////////////////////////////////////////////////////
-     * Check the convergence
-     */
-    bool Solver_NRpolar::converged(vec PQinc, uint npqpvpq) {
 
+    bool NRpolarSolver::converged(const vec& PQinc, uint npqpvpq) const
+    {
         for (uint k = 0; k < npqpvpq; k++)
             if (abs(PQinc.coeff(k)) > tolerance)
                 return false;
@@ -437,7 +437,7 @@ namespace fPotencia {
     }
     
     
-    void Solver_NRpolar::get_increments(vec X, vec &incV, vec &incD, uint npq, uint npv){
+    void NRpolarSolver::get_increments(vec X, vec &incV, vec &incD, uint npq, uint npv){
     
         uint npqpv = npq + npv;
         uint k;
@@ -452,10 +452,8 @@ namespace fPotencia {
     
     }
 
-    /*//////////////////////////////////////////////////////////////////////////
-     * Check the convergence
-     */
-    void Solver_NRpolar::update_solution(vec X, uint npq, uint npv) {
+
+    void NRpolarSolver::update_solution(vec X, uint npq, uint npv) {
 
         uint npqpv = npq + npv;
         uint k;
@@ -478,11 +476,9 @@ namespace fPotencia {
         }
     }
 
-    /*//////////////////////////////////////////////////////////////////////////
-     * Run the solve process
-     */
-    Solver_State Solver_NRpolar::solve() {
 
+    Solver::Result NRpolarSolver::powerFlow(Circuit& grid)
+    {
         uint npq = Model.loadBusIndices.size();
         uint npv = Model.generatorBusIndices.size();
         uint npqpvpq = 2 * npq + npv;
@@ -525,12 +521,11 @@ namespace fPotencia {
         calculate_Q(npq, npv);
 
         if (! didConverge) {
-            return Solver_State::Not_Converged;
+            return Solver::NotSolved;
         } else {
             calculate_slack_power();
-            Model.set_solution(Sol.get_cx());
-            //Sol.print("Final Soltution:");
-            return Solver_State::Converged;
+            grid.set_solution(Sol.get_cx());
+            return Solver::Solved;
         }
     }
     
@@ -540,7 +535,7 @@ namespace fPotencia {
      * circuit's own solution power values. this is specially usefull when updating
      * the circuit power values while keeping the previous voltage solution
      */
-    void Solver_NRpolar::update_solution_power_from_circuit(){    
+    void NRpolarSolver::update_solution_power_from_circuit(){    
         Sol.P = Model.get_initial_solution().P;
         Sol.Q = Model.get_initial_solution().Q;
         Pesp = Sol.P;
