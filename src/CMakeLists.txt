@@ -7,7 +7,6 @@ set(fpotencia_SOURCES
     Circuit.cpp
     Generator.cpp
     TransformerConstructors.cpp
-    Solver_Iwamoto.cpp
     Graph.cpp
     Solver_NRcurrent.cpp
     Shunt.cpp
@@ -44,7 +43,6 @@ set(fpotencia_HEADERS
     ExternalGrid.h
     Solver_NRpolar.h
     LineConstructors.h
-    Solver_Iwamoto.h
     Solver_NRcurrent.h
     CommonFunctions.h
     Generator.h)

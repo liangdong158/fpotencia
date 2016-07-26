@@ -3,7 +3,6 @@ set(fpotencia_test_SOURCES
     JacobiSolverTest.cpp
     ZBusGSSolverTest.cpp
     NRrectSolverTest.cpp
-    IwamotoSolverTest.cpp
     NRpolarSolverTest.cpp
     NRcurrentSolverTest.cpp
     main.cpp)
