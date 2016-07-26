@@ -63,9 +63,12 @@ instruction you're going to need.
 
 ## Roadmap
 
-  0.9::
-    - API overhaul
-    - Performance Improvements
-  1.0::
-    - More test cases
-    - Reliable PV <-> PQ switching
+### 0.9
+
+  - API overhaul
+  - Performance Improvements
+
+### 1.0
+
+  - More test cases
+  - Reliable PV <-> PQ switching
