@@ -28,7 +28,7 @@
 *.app
 
 # CMake stuff:
-CmakeLists.txt.user
+CMakeLists.txt.user
 
 # Editor files:
 *~
