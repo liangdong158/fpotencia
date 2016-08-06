@@ -28,19 +28,19 @@ namespace fPotencia {
             Sol = Model.get_initial_cx_solution();
         }
 
-        BUSES.reserve(Model.PQ_list.size() + Model.PV_list.size()); // preallocate memory
-        BUSES.insert(BUSES.end(), Model.PQ_list.begin(), Model.PQ_list.end());
-        BUSES.insert(BUSES.end(), Model.PV_list.begin(), Model.PV_list.end());
+        BUSES.reserve(Model.loadBusIndices.size() + Model.generatorBusIndices.size()); // preallocate memory
+        BUSES.insert(BUSES.end(), Model.loadBusIndices.begin(), Model.loadBusIndices.end());
+        BUSES.insert(BUSES.end(), Model.generatorBusIndices.begin(), Model.generatorBusIndices.end());
 
-        PQPV.reserve(2 * Model.PQ_list.size() + Model.PV_list.size()); // preallocate memory
-        PQPV.insert(PQPV.end(), Model.PQ_list.begin(), Model.PQ_list.end());
-        PQPV.insert(PQPV.end(), Model.PV_list.begin(), Model.PV_list.end());
+        PQPV.reserve(2 * Model.loadBusIndices.size() + Model.generatorBusIndices.size()); // preallocate memory
+        PQPV.insert(PQPV.end(), Model.loadBusIndices.begin(), Model.loadBusIndices.end());
+        PQPV.insert(PQPV.end(), Model.generatorBusIndices.begin(), Model.generatorBusIndices.end());
 
-        PQPVPQPV.reserve(2 * (Model.PQ_list.size() + Model.PV_list.size())); // preallocate memory
-        PQPVPQPV.insert(PQPVPQPV.end(), Model.PQ_list.begin(), Model.PQ_list.end());
-        PQPVPQPV.insert(PQPVPQPV.end(), Model.PV_list.begin(), Model.PV_list.end());
-        PQPVPQPV.insert(PQPVPQPV.end(), Model.PQ_list.begin(), Model.PQ_list.end());
-        PQPVPQPV.insert(PQPVPQPV.end(), Model.PV_list.begin(), Model.PV_list.end());
+        PQPVPQPV.reserve(2 * (Model.loadBusIndices.size() + Model.generatorBusIndices.size())); // preallocate memory
+        PQPVPQPV.insert(PQPVPQPV.end(), Model.loadBusIndices.begin(), Model.loadBusIndices.end());
+        PQPVPQPV.insert(PQPVPQPV.end(), Model.generatorBusIndices.begin(), Model.generatorBusIndices.end());
+        PQPVPQPV.insert(PQPVPQPV.end(), Model.loadBusIndices.begin(), Model.loadBusIndices.end());
+        PQPVPQPV.insert(PQPVPQPV.end(), Model.generatorBusIndices.begin(), Model.generatorBusIndices.end());
 
         fill_especifyed_values();
 
@@ -57,19 +57,19 @@ namespace fPotencia {
 
         Sol = sol_;
 
-        BUSES.reserve(Model.PQ_list.size() + Model.PV_list.size()); // preallocate memory
-        BUSES.insert(BUSES.end(), Model.PQ_list.begin(), Model.PQ_list.end());
-        BUSES.insert(BUSES.end(), Model.PV_list.begin(), Model.PV_list.end());
+        BUSES.reserve(Model.loadBusIndices.size() + Model.generatorBusIndices.size()); // preallocate memory
+        BUSES.insert(BUSES.end(), Model.loadBusIndices.begin(), Model.loadBusIndices.end());
+        BUSES.insert(BUSES.end(), Model.generatorBusIndices.begin(), Model.generatorBusIndices.end());
 
-        PQPV.reserve(2 * Model.PQ_list.size() + Model.PV_list.size()); // preallocate memory
-        PQPV.insert(PQPV.end(), Model.PQ_list.begin(), Model.PQ_list.end());
-        PQPV.insert(PQPV.end(), Model.PV_list.begin(), Model.PV_list.end());
+        PQPV.reserve(2 * Model.loadBusIndices.size() + Model.generatorBusIndices.size()); // preallocate memory
+        PQPV.insert(PQPV.end(), Model.loadBusIndices.begin(), Model.loadBusIndices.end());
+        PQPV.insert(PQPV.end(), Model.generatorBusIndices.begin(), Model.generatorBusIndices.end());
 
-        PQPVPQPV.reserve(2 * (Model.PQ_list.size() + Model.PV_list.size())); // preallocate memory
-        PQPVPQPV.insert(PQPVPQPV.end(), Model.PQ_list.begin(), Model.PQ_list.end());
-        PQPVPQPV.insert(PQPVPQPV.end(), Model.PV_list.begin(), Model.PV_list.end());
-        PQPVPQPV.insert(PQPVPQPV.end(), Model.PQ_list.begin(), Model.PQ_list.end());
-        PQPVPQPV.insert(PQPVPQPV.end(), Model.PV_list.begin(), Model.PV_list.end());
+        PQPVPQPV.reserve(2 * (Model.loadBusIndices.size() + Model.generatorBusIndices.size())); // preallocate memory
+        PQPVPQPV.insert(PQPVPQPV.end(), Model.loadBusIndices.begin(), Model.loadBusIndices.end());
+        PQPVPQPV.insert(PQPVPQPV.end(), Model.generatorBusIndices.begin(), Model.generatorBusIndices.end());
+        PQPVPQPV.insert(PQPVPQPV.end(), Model.loadBusIndices.begin(), Model.loadBusIndices.end());
+        PQPVPQPV.insert(PQPVPQPV.end(), Model.generatorBusIndices.begin(), Model.generatorBusIndices.end());
 
         fill_especifyed_values();
 
@@ -90,7 +90,7 @@ namespace fPotencia {
         bool val = true;
 
         //Only one slack bus allowed
-        if (Model.VD_list.size() > 1)
+        if (Model.slackBusIndices.size() > 1)
             val = false;
 
         return val;
@@ -100,7 +100,7 @@ namespace fPotencia {
      * Calculate the slack bus power
      */
     void Solver_NRrect::calculate_slack_power() {
-        for (uint k : Model.VD_list) {
+        for (uint k : Model.slackBusIndices) {
             cx_double I(0.0, 0.0);
             for (uint j = 0; j < Model.buses.size(); j++)
                 I += Model.Y.coeff(k, j) * Sol.V(j);
@@ -181,10 +181,10 @@ namespace fPotencia {
         for (uint k : PQPV)
             Pesp.coeffRef(k) = Sol.S.coeff(k).real(); //P at PQ and PV buses
 
-        for (uint k : Model.PQ_list)
+        for (uint k : Model.loadBusIndices)
             Qesp.coeffRef(k) = Sol.S.coeff(k).imag(); //Q at PQ buses
 
-        for (uint k : Model.PV_list)
+        for (uint k : Model.generatorBusIndices)
             V2esp.coeffRef(k) = pow(abs(Sol.V.coeff(k)), 2.0); //V at PV buses ^ 2
     }
 
@@ -222,7 +222,7 @@ namespace fPotencia {
         //cout << "J3 and 4" << endl;
         //J3 and J4
         for (uint a = 0; a < npq; a++) {
-            i = Model.PQ_list[a];
+            i = Model.loadBusIndices[a];
             for (uint b = 0; b < npqpv; b++) {
                 k = PQPV[b];
                 if (i == k) {
@@ -238,7 +238,7 @@ namespace fPotencia {
         //cout << "J5 and 6" << endl;
         //J5 and J6
         for (uint a = 0; a < npv; a++) {
-            i = Model.PV_list[a];
+            i = Model.generatorBusIndices[a];
             J5(a, a) = 2.0 * Sol.Vr(i);
             J6(a, a) = 2.0 * Sol.Vi(i);
         }
@@ -319,8 +319,8 @@ namespace fPotencia {
      */
     Solver_State Solver_NRrect::solve() {
 
-        uint npq = Model.PQ_list.size();
-        uint npv = Model.PV_list.size();
+        uint npq = Model.loadBusIndices.size();
+        uint npv = Model.generatorBusIndices.size();
         uint n2pqpv = 2 * (npq + npv); //size of the arrays
 
         //System : J*X = K

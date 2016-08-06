@@ -24,8 +24,8 @@ namespace fPotencia {
             Sol = Model.get_initial_cx_solution();
         }
         
-        BUSES.reserve(Model.PQ_list.size()); // preallocate memory
-        BUSES.insert(BUSES.end(), Model.PQ_list.begin(), Model.PQ_list.end());
+        BUSES.reserve(Model.loadBusIndices.size()); // preallocate memory
+        BUSES.insert(BUSES.end(), Model.loadBusIndices.begin(), Model.loadBusIndices.end());
         //BUSES.insert(BUSES.end(), Model.PV_list.begin(), Model.PV_list.end());
 
     }
@@ -85,7 +85,7 @@ namespace fPotencia {
             state = Solver_State::Converged;
 
             //Calculate the slack bus power
-            for (uint k : Model.VD_list) {
+            for (uint k : Model.slackBusIndices) {
             cx_double I(0.0, 0.0);
             for (uint j = 0; j < Model.buses.size(); j++) {
                 I += Model.Y.coeff(k, j) * Sol.V(j);

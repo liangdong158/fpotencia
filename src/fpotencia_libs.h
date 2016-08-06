@@ -44,8 +44,8 @@
 
 typedef std::complex<double> cx_double;
 
-typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> mat;
-typedef Eigen::Matrix<double, Eigen::Dynamic, 1> vec;
+typedef Eigen::MatrixXd mat;
+typedef Eigen::VectorXd vec;
 
 typedef Eigen::VectorXcd cx_vec;
 typedef Eigen::MatrixXcd cx_mat;

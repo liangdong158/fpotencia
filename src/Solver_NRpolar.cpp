@@ -18,91 +18,88 @@ namespace fPotencia {
     /*
      * constructor
      */
-    Solver_NRpolar::Solver_NRpolar(Circuit model) {
-
-        Model = model;
-
-        Sol = Model.get_initial_solution();
+    Solver_NRpolar::Solver_NRpolar(Circuit const& model):
+            Model(model),
+            tolerance(DEFAULT_SOLUTION_TOLERANCE),
+            maxIterations(DEFAULT_MAX_ITERATIONS),
+            Sol(Model.get_initial_solution())
+    {
         if (!Sol.initialized) {
             Model.compile(false);
             Sol = Model.get_initial_solution();
         }
 
-        BUSES.reserve(Model.PQ_list.size() + Model.PV_list.size()); // preallocate memory
-        BUSES.insert(BUSES.end(), Model.PQ_list.begin(), Model.PQ_list.end());
-        BUSES.insert(BUSES.end(), Model.PV_list.begin(), Model.PV_list.end());
 
-        PQPV.reserve(2 * Model.PQ_list.size() + Model.PV_list.size()); // preallocate memory
-        PQPV.insert(PQPV.end(), Model.PQ_list.begin(), Model.PQ_list.end());
-        PQPV.insert(PQPV.end(), Model.PV_list.begin(), Model.PV_list.end());
+        BUSES.reserve(
+                Model.loadBusIndices.size()
+                    + Model.generatorBusIndices.size());
+        BUSES.insert(
+                BUSES.end(),
+                Model.loadBusIndices.begin(),
+                Model.loadBusIndices.end());
+        BUSES.insert(
+                BUSES.end(),
+                Model.generatorBusIndices.begin(),
+                Model.generatorBusIndices.end());
 
-        LastPQ.reserve(Model.PQ_list.size()); // preallocate memory
-        LastPQ.insert(LastPQ.end(), Model.PQ_list.begin(), Model.PQ_list.end());
+        PQPV.reserve(
+                2 * Model.loadBusIndices.size()
+                    + Model.generatorBusIndices.size());
+        PQPV.insert(
+                PQPV.end(),
+                Model.loadBusIndices.begin(),
+                Model.loadBusIndices.end());
+        PQPV.insert(
+                PQPV.end(),
+                Model.generatorBusIndices.begin(),
+                Model.generatorBusIndices.end());
 
-        LastPV.reserve(Model.PV_list.size()); // preallocate memory
-        LastPV.insert(LastPV.end(), Model.PV_list.begin(), Model.PV_list.end());
+        LastPQ.reserve(Model.loadBusIndices.size());
+        LastPQ.insert(
+                LastPQ.end(),
+                Model.loadBusIndices.begin(),
+                Model.loadBusIndices.end());
+
+        LastPV.reserve(Model.generatorBusIndices.size());
+        LastPV.insert(
+                LastPV.end(),
+                Model.generatorBusIndices.begin(),
+                Model.generatorBusIndices.end());
 
         Pesp = Sol.P;
         Qesp = Sol.Q;
         
-        if (!checks())
-            throw std::invalid_argument("The circuit failed the solver compatibility test.");
+        if (!checks()) {
+            throw std::invalid_argument(
+                    "The circuit failed the solver compatibility test.");
+        }
     }
 
-    /*
-     * constructor, given previous solution
-     */
-    Solver_NRpolar::Solver_NRpolar(Circuit model, solution sol_) {
 
-        Model = model;
-
+    Solver_NRpolar::Solver_NRpolar(
+            const Circuit& model,
+            const solution& sol_):
+                Solver_NRpolar(model)
+    {
         Sol = sol_;
-
-        BUSES.reserve(Model.PQ_list.size() + Model.PV_list.size()); // preallocate memory
-        BUSES.insert(BUSES.end(), Model.PQ_list.begin(), Model.PQ_list.end());
-        BUSES.insert(BUSES.end(), Model.PV_list.begin(), Model.PV_list.end());
-
-        PQPV.reserve(2 * Model.PQ_list.size() + Model.PV_list.size()); // preallocate memory
-        PQPV.insert(PQPV.end(), Model.PQ_list.begin(), Model.PQ_list.end());
-        PQPV.insert(PQPV.end(), Model.PV_list.begin(), Model.PV_list.end());
-
-        LastPQ.reserve(Model.PQ_list.size()); // preallocate memory
-        LastPQ.insert(LastPQ.end(), Model.PQ_list.begin(), Model.PQ_list.end());
-
-        LastPV.reserve(Model.PV_list.size()); // preallocate memory
-        LastPV.insert(LastPV.end(), Model.PV_list.begin(), Model.PV_list.end());
-
-        Pesp = Sol.P;
-        Qesp = Sol.Q;
-        
-        if (!checks())
-            throw std::invalid_argument("The circuit failed the solver compatibility test.");
     }
 
-    /*
-     * destructor
-     */
-    Solver_NRpolar::~Solver_NRpolar() {
+
+    Solver_NRpolar::~Solver_NRpolar() noexcept
+    {
     }
 
-    /*//////////////////////////////////////////////////////////////////////////
-     * checks wether if the grid can be solved with this method
-     */
-    bool Solver_NRpolar::checks() {
-        bool val = true;
 
-        //Only one slack bus allowed
-        if (Model.VD_list.size() > 1)
-            val = false;
-
-        return val;
+    bool Solver_NRpolar::checks() const
+    {
+        return Model.slackBusIndices.size() <= 1;
     }
 
     /*//////////////////////////////////////////////////////////////////////////
      * Calculate the slack bus power
      */
     void Solver_NRpolar::calculate_slack_power() {        
-        for (uint k : Model.VD_list) {
+        for (auto k: Model.slackBusIndices) {
             cx_double I(0.0, 0.0);
             for (uint j = 0; j < Model.buses.size(); j++) {
                 I += Model.Y.coeff(k, j) * Sol.Vcx(j);
@@ -199,7 +196,7 @@ namespace fPotencia {
     /*//////////////////////////////////////////////////////////////////////////
      * Calculate the jacobian of the circuit
      */
-    void Solver_NRpolar::Jacobian(mat &J, uint npq, uint npv) {
+    void Solver_NRpolar::Jacobian(mat &J, vec &V, vec &D, uint npq, uint npv) {
         //matrix(rows, cols)
         uint npqpv = npq + npv;
         double val;
@@ -212,15 +209,15 @@ namespace fPotencia {
         for (uint a = 0; a < npqpv; a++) { //rows
             k = PQPV[a];
             //diagonal
-            J(a, a) = -Q(k) - Model.B(k, k) * Sol.V.coeff(k) * Sol.V.coeff(k);
+            J(a, a) = -Q(k) - Model.B(k, k) * V.coeff(k) * V.coeff(k);
 
             //non diagonal elements
             for (uint b = 0; b < npqpv; b++) {
                 if (b != a) {
                     j = PQPV[b];
-                    val = Sol.V.coeff(k) * Sol.V.coeff(j)
-                            *(Model.G(k, j) * sin(Sol.D.coeff(k) - Sol.D.coeff(j))
-                            - Model.B(k, j) * cos(Sol.D.coeff(k) - Sol.D.coeff(j)));
+                    val = V.coeff(k) * V.coeff(j)
+                            *(Model.G(k, j) * sin(D.coeff(k) - D.coeff(j))
+                            - Model.B(k, j) * cos(D.coeff(k) - D.coeff(j)));
                     //if (val != 0.0)
                     J(a, b) = val;
                 }
@@ -235,13 +232,13 @@ namespace fPotencia {
             //diagonal
             //std::cout << "J2D:" << (a + da) << "," << (a + db) << std::endl;
             if (a < npq)
-                J(a + da, a + db) = P(k) + Model.G(k, k) * Sol.V.coeff(k) * Sol.V.coeff(k);
+                J(a + da, a + db) = P(k) + Model.G(k, k) * V.coeff(k) * V.coeff(k);
 
             //non diagonal elements
             for (uint b = 0; b < npq; b++) {
                 if (b != a) {
                     j = PQPV[b];
-                    val = Sol.V.coeff(k) * Sol.V.coeff(j)
+                    val = V.coeff(k) * V.coeff(j)
                             *(Model.G(k, j) * cos(Sol.D.coeff(k) - Sol.D.coeff(j))
                             + Model.B(k, j) * sin(Sol.D.coeff(k) - Sol.D.coeff(j)));
                     //if (val != 0.0)
@@ -259,15 +256,15 @@ namespace fPotencia {
             k = PQPV[a];
             //diagonal
             //std::cout << "J3:" << (a + da) << "," << (a + db) << std::endl;
-            J(a + da, a + db) = P(k) - Model.G(k, k) * Sol.V.coeff(k) * Sol.V.coeff(k);
+            J(a + da, a + db) = P(k) - Model.G(k, k) * V.coeff(k) * V.coeff(k);
 
             //non diagonal elements
             for (uint b = 0; b < npqpv; b++) {
                 if (b != a) {
                     j = PQPV[b];
-                    val = Sol.V.coeff(k) * Sol.V.coeff(j)
-                            *(Model.G(k, j) * cos(Sol.D.coeff(k) - Sol.D.coeff(j))
-                            + Model.B(k, j) * sin(Sol.D.coeff(k) - Sol.D.coeff(j)));
+                    val = V.coeff(k) * V.coeff(j)
+                            *(Model.G(k, j) * cos(D.coeff(k) - D.coeff(j))
+                            + Model.B(k, j) * sin(D.coeff(k) - D.coeff(j)));
                     //if (val != 0.0)
                     //std::cout << "J3:" << (a + da) << "," << (b + db) << std::endl;
                     J(a + da, b + db) = -val;
@@ -282,15 +279,15 @@ namespace fPotencia {
             k = PQPV[a];
             //diagonal
             //std::cout << "J4:" << (a + da) << "," << (a + db) << std::endl;
-            J(a + da, a + db) = Q(k) - Model.B(k, k) * Sol.V.coeff(k) * Sol.V.coeff(k);
+            J(a + da, a + db) = Q(k) - Model.B(k, k) * V.coeff(k) * V.coeff(k);
 
             //non diagonal elements
             for (uint b = 0; b < npq; b++) {
                 if (b != a) {
                     j = PQPV[b];
-                    val = Sol.V.coeff(k) * Sol.V.coeff(j)
-                            *(Model.G(k, j) * sin(Sol.D.coeff(k) - Sol.D.coeff(j))
-                            - Model.B(k, j) * cos(Sol.D.coeff(k) - Sol.D.coeff(j)));
+                    val = V.coeff(k) * V.coeff(j)
+                            *(Model.G(k, j) * sin(D.coeff(k) - D.coeff(j))
+                            - Model.B(k, j) * cos(D.coeff(k) - D.coeff(j)));
                     if (val != 0.0) {
                         //std::cout << "J4:" << (a + da) << "," << (b + db) << std::endl;
                         J(a + da, b + db) = val;
@@ -301,6 +298,111 @@ namespace fPotencia {
 
 
     }
+    
+    
+    /*
+     
+     def mu(Ybus, J, F, dV, dx, pvpq, pq):
+    """
+    Calculate the Iwamoto acceleration parameter as described in:
+    "A Load Flow Calculation Method for Ill-Conditioned Power Systems" by Iwamoto, S. and Tamura, Y.
+    Args:
+        Ybus: Admittance matrix
+        J: Jacobian matrix
+        F: mismatch vector
+        dV: voltage increment (in complex form)
+        dx: solution vector as calculated dx = solve(J, F)
+        pvpq: array of the pq and pv indices
+        pq: array of the pq indices
+
+    Returns:
+        the Iwamoto's optimal multiplier for ill conditioned systems
+    """
+    # evaluate the Jacobian of the voltage derivative
+    dS_dVm, dS_dVa = dSbus_dV(Ybus, dV)  # compute the derivatives
+
+    J11 = dS_dVa[array([pvpq]).T, pvpq].real
+    J12 = dS_dVm[array([pvpq]).T, pq].real
+    J21 = dS_dVa[array([pq]).T, pvpq].imag
+    J22 = dS_dVm[array([pq]).T, pq].imag
+
+    # theoretically this is the second derivative matrix
+    # since the Jacobian has been calculated with dV instead of V
+    J2 = vstack([
+            hstack([J11, J12]),
+            hstack([J21, J22])
+            ], format="csr")
+
+    a = F
+    b = J * dx
+    c = 0.5 * dx * J2 * dx
+
+    g0 = -a.dot(b)
+    g1 = b.dot(b) + 2 * a.dot(c)
+    g2 = -3.0 * b.dot(c)
+    g3 = 2.0 * c.dot(c)
+
+    roots = np.roots([g3, g2, g1, g0])
+    # three solutions are provided, the first two are complex, only the real solution is valid
+    return roots[2].real
+     
+     */
+    
+    /*
+     * Solves a polynomial defined by the coeffients g0, g1, g3 and g3 such that
+     * d + c*x + b*x^2 + a*x^3 = 0
+     * 
+     * Provides the real solution using the Newton-Raphson technique
+     */
+    double Solver_NRpolar::solve_poly_deg3(double d, double c, double b, double a, double x) {
+        double eps = 1e-9;
+
+        double fx = a * x * x * x + b * x * x + c * x + d;
+        double fxd = 3 * a * x * x + 2 * b * x + c;
+        double incx = fx / fxd;
+
+        while (abs(incx) > eps) {
+            x -= incx;
+            fx = a * x * x * x + b * x * x + c * x + d;
+            fxd = 3 * a * x * x + 2 * b * x + c;
+            incx = fx / fxd;
+        }
+        return x;
+    }
+    
+    double Solver_NRpolar::mu(mat &J, mat &J2, vec &F, vec &dV, vec &dD, vec & dx, uint npq, uint npv){
+        
+        
+       // cout << "\n\n\nincV:\n" << dV << "\n\nincD:\n" << dD << "\n\ndx:\n" << dx <<  "\n\nF:\n" << F << endl;
+        
+        Jacobian(J2, dV, dD, npq, npv);
+        
+        //cout << "J2:\n" << J2 << endl;
+        
+        
+        vec a = F;
+        //cout << "a:\n" << F << endl;
+        
+        vec b = J * (dx);
+        //cout << "b:\n" << b << endl;
+        
+        
+        vec c(2*npq+npv); //= dx. * b * 0.5;
+        for (uint i=0;i<(2*npq+npv); i++) //this loop is because EIGEN does not want to perform this simple element wise vector multiplication...
+            c(i) = dx.coeff(i) * b.coeff(i) * 0.5;
+                    
+        //cout << "c:\n" << c << endl;
+
+        double g0 = -1* a.dot(b);
+        double g1 = b.dot(b) + 2 * a.dot(c);
+        double g2 = -3.0 * b.dot(c);
+        double g3 = 2.0 * c.dot(c);
+           
+        double sol = solve_poly_deg3(g3, g2, g1, g0, 1.0);
+        return sol;         
+    }
+    
+    
 
     /*//////////////////////////////////////////////////////////////////////////
      * Calculate the power increments
@@ -328,10 +430,26 @@ namespace fPotencia {
     bool Solver_NRpolar::converged(vec PQinc, uint npqpvpq) {
 
         for (uint k = 0; k < npqpvpq; k++)
-            if (abs(PQinc.coeff(k)) > EPS)
+            if (abs(PQinc.coeff(k)) > tolerance)
                 return false;
 
         return true;
+    }
+    
+    
+    void Solver_NRpolar::get_increments(vec X, vec &incV, vec &incD, uint npq, uint npv){
+    
+        uint npqpv = npq + npv;
+        uint k;
+
+        for (uint a = 0; a < npqpv; a++) {
+            k = PQPV[a];
+            incD(k) = X.coeff(a);
+
+            if (a < npq)
+                incV(k) = X.coeff(a + npqpv);
+        }
+    
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -347,7 +465,7 @@ namespace fPotencia {
             Sol.D(k) += X.coeff(a);
 
             if (a < npq)
-                Sol.V(k) = Sol.V.coeff(k) *(1.0 + X.coeff(a + npqpv));
+                Sol.V(k) = Sol.V.coeff(k) * (1.0 + X.coeff(a + npqpv));
         }
 
         //Correct for PV buses
@@ -365,57 +483,50 @@ namespace fPotencia {
      */
     Solver_State Solver_NRpolar::solve() {
 
-        uint npq = Model.PQ_list.size();
-        uint npv = Model.PV_list.size();
-        uint npqpvpq = 2 * npq + npv; //size of the arrays
+        uint npq = Model.loadBusIndices.size();
+        uint npv = Model.generatorBusIndices.size();
+        uint npqpvpq = 2 * npq + npv;
 
         //System : J*X = K
         mat J(npqpvpq, npqpvpq);
+        mat J2(npqpvpq, npqpvpq);
         vec K(npqpvpq);
         vec X(npqpvpq);
+        vec incV(Sol.Lenght);
+        vec incD(Sol.Lenght);
+        
+        // First shot: Perhaps the model already converged?
 
-        bool conv;
-        Iterations = 0;
-
-        //first calculations
         get_power_inc(K, npq, npv);
-        conv = converged(K, npqpvpq);
+        auto didConverge = converged(K, npqpvpq);
 
-        //std::cout << "Converged: " << conv << std::endl;
-
-        while (!conv && Iterations < Max_Iter) {
-            //std::cout << "-----------------------Iter: " << Iterations << std::endl;
-            //std::cout << "K:\n" << K << std::endl;
-            //Calculate the jacobian
-            Jacobian(J, npq, npv);
-            //std::cout << "J:\n" << J << std::endl;
+        for (unsigned i = 0; i < maxIterations && ! didConverge; ++i) {
+            Jacobian(J, Sol.V, Sol.D, npq, npv);
 
             Eigen::FullPivLU<mat>lu(J); //Full pivot LU
             X = lu.solve(K);
-            //std::cout << "X:\n" << X << std::endl;
-
+            
+            get_increments(X, incV, incD, npq, npv);
+            
+            auto mu_ = mu(J, J2, K, incV, incD, X, npq, npv);
+            
             //upgrade the solution
-            update_solution(X, npq, npv);
+            update_solution(X * mu_, npq, npv);
 
-            calculate_Q(npq, npv); //Calculate the reactive power for the PV buses
-
-            correct_PVbuses_violating_Q(npq, npv, J, K, X); //pass PV buses to PQ
 
             //Calculate the increment of power for the new iteration
             get_power_inc(K, npq, npv);
 
-            //Check convergency
-            conv = converged(K, npqpvpq);
-
-            //Sol.print("Soltution:");
-
-            Iterations++;
+            didConverge = converged(K, npqpvpq);
         }
+        
+        //Calculate the reactive power for the PV buses:
 
-        if (!conv || Iterations == Max_Iter)
+        calculate_Q(npq, npv);
+
+        if (! didConverge) {
             return Solver_State::Not_Converged;
-        else {
-            //std::cout << "Converged in " << Iterations << " iterations." << std::endl;
+        } else {
             calculate_slack_power();
             Model.set_solution(Sol.get_cx());
             //Sol.print("Final Soltution:");
