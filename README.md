@@ -35,7 +35,7 @@ also required. The C++ compiler must understand C++11.
 
 To create a release build of a shared library, e.g., for packaging, issue:
 
-    mkdir Build
+    mkdir Build && cd Build
     cmake \
         -DCMAKE_BUILD_TYPE=Release \
         -DBUILD_SHARED_LIBS=ON \        # If OFF, a static lib will be built
