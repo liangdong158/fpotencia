@@ -211,9 +211,9 @@ namespace fPotencia {
      */
     void Line3::SetType(LineType3 &line_type) {
         cx_mat3 U;
-        U(0.0) = cx_double(1.0, 0.0);
-        U(1.1) = cx_double(1.0, 0.0);
-        U(2.2) = cx_double(1.0, 0.0);
+        U(0, 0) = cx_double(1.0, 0.0);
+        U(1, 1) = cx_double(1.0, 0.0);
+        U(2, 2) = cx_double(1.0, 0.0);
         cx_mat3 Zabc = line_type.Zabc * lenght;
         cx_mat3 Yabc = line_type.Yabc * lenght;
 

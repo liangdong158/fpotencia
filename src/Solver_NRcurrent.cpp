@@ -189,10 +189,10 @@ namespace fPotencia {
         for (uint x = 0; x < N; x++) { //rows
             b = 0;
             k = PQPV[x];
-            for (uint y = 0; y < N; y++) { //cols           
+            for (uint y = 0; y < N; y++) { //cols
                 i = PQPV[y];
 
-                if (Model.Y.coeff(k, i) != ZERO)
+                if (Model.Y.coeff(k, i) != ZERO) {
                     if (i == k) { //Diagonal sub-Jacobians
 
                         abcd(k, sol, ak, bk, ck, dk); //always for the diagonal
@@ -274,8 +274,8 @@ namespace fPotencia {
                                 J(a + 1, b + 1) = 2;*/
                             }
                         }
-
                     }
+                }
 
                 b += 2;
             }
