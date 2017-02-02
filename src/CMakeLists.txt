@@ -52,17 +52,28 @@ set(fpotencia_UNSUPPORTED_SOLVERS_SOURCES
     Solver_NRrect.cpp)
 
 
-if(${BUILD_UNSUPPORTED_SOLVERS})
+if(BUILD_UNSUPPORTED_SOLVERS)
     list(APPEND ${fpotencia_SOURCES} ${fpotencia_UNSUPPORTED_SOLVERS_SOURCES})
 endif()
 
 
 include_directories(${eigen3_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+
 add_library(fpotencia ${fpotencia_SOURCES})
+
 target_link_libraries(fpotencia
     Boost::graph)
+
+
+if(OPENMP_FOUND AND WITH_OPENMP)
+    add_compile_options(${OpenMP_CXX_FLAGS})
+endif()
+
+
 set_property(TARGET fpotencia PROPERTY CXX_STANDARD 11)
 set_property(TARGET fpotencia PROPERTY SOVERSION ${VERSION})
+
+
 install(TARGETS fpotencia
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
