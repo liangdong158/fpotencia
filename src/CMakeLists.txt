@@ -65,11 +65,6 @@ target_link_libraries(fpotencia
     Boost::graph)
 
 
-if(OPENMP_FOUND AND WITH_OPENMP)
-    add_compile_options(${OpenMP_CXX_FLAGS})
-endif()
-
-
 set_property(TARGET fpotencia PROPERTY CXX_STANDARD 11)
 set_property(TARGET fpotencia PROPERTY SOVERSION ${VERSION})
 
