@@ -38,61 +38,103 @@ namespace fPotencia {
     class Circuit {
     public:
 
+
+        typedef std::vector<Bus> Buses;
+        typedef std::vector<Load> Loads;
+        typedef std::vector<Generator> Generators;
+        typedef std::vector<Line> Lines;
+        typedef std::vector<Transformer> Transformers;
+        typedef std::vector<Shunt> Shunts;
+        typedef std::vector<ExternalGrid> ExternalGrids;
+
+
+        /*!
+         * \brief Creates a new, empty, unnamed circuit.
+         *
+         * Initializes the default voltage to $1 + j0$.
+         */
         Circuit();
 
-        Circuit(string name);
 
-        virtual ~Circuit();
+        /*!
+         * \brief Deletes all contents of the circuit, including all buses,
+         *  lines, etc.
+         */
+        virtual ~Circuit() noexcept;
 
-        /*Properties*/
-        string Name;
 
-        /*Admittance matrix
+        /*!
+         * \brief Addmitance matrix
+         *
+         * \sa #compile()
          */
         sp_cx_mat Y;
 
-        /*full impedance matrix
+
+        /*!
+         * \brief Full impedance matrix
+         *
+         * \sa #compile()
          */
         cx_mat Z;
 
-        /*Reduced circuit impedance matrix (Does not contain the slack)
+
+        /*!
+         * \brief Reduced circuit impedance matrix, excluding the slack bus
+         *
+         * \sa #compile()
          */
         cx_mat Zred;
 
 
-        std::vector<Bus> buses;
+        //! \brief Buses contained in the grid
+        Buses buses;
 
-        std::vector<Load> loads;
 
-        std::vector<Generator> generators;
+        //! \brief All loads in the grid
+        Loads loads;
 
-        std::vector<Line> lines;
 
-        std::vector<Transformer> transformers;
+        //! \brief All generators connected to the grid
+        Generators generators;
 
-        std::vector<Shunt> shunts;
 
-        std::vector<ExternalGrid> external_grids;
+        //! \brief All lines in the grid
+        Lines lines;
 
-        /*PQ buses indices list
-         */
-        std::vector<unsigned int> PQ_list;
 
-        /*PV buses indices list
-         */
-        std::vector<unsigned int> PV_list;
+        //! \brief All transformers in the grid
+        Transformers transformers;
 
-        /*Slack buses indices list
-         */
-        std::vector<unsigned int> VD_list;
 
-        /*
-         * Voltage applyed by default to the initial solution
-         * it is initialized to 1 + 0j
+        //! \brief All shunts present in the grid
+        Shunts shunts;
+
+
+        //! \brief References external grids connected to this one
+        ExternalGrids externalGrids;
+
+
+        //! \brief Indices of PQ (load) buses
+        std::vector<unsigned int> loadBusIndices;
+
+
+        //! \brief Indices of PV (generator) buses
+        std::vector<unsigned int> generatorBusIndices;
+
+
+        //! \brief Indicies of VD (slack) bus(es)
+        std::vector<unsigned int> slackBusIndices;
+
+
+        /*!
+         * \biref The voltage applyed by default to the initial solution
+         *
+         * This default voltage is a complex number and initialized to
+         * $1 + 0j$ by the constructor.
          */
         cx_double default_voltage;
 
-        /*Functions*/
 
         /*
          * Prepares the circuit for the solver.
